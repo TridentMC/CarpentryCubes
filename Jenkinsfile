@@ -3,13 +3,20 @@ pipeline {
 	stages {
 		stage('Build') {
 			steps {
+				checkout scm
 				sh 'rm -f private.gradle'
 				sh './gradlew setupCiWorkspace clean build'
+				archive 'build/libs/*jar'
 			}
 		}
 		stage('Deploy') {
 			steps {
-				archive 'build/libs/*jar'
+				withCredentials([file(credentialsId: 'tridev-nexus', variable: 'PRIVATEGRADLE')]) {
+					sh '''
+						cp "$PRIVATEGRADLE" private.gradle
+						./gradlew uploadShadow
+					'''
+				}
 			}
 		}
 	}
